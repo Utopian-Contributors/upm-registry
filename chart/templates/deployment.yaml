@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: registry
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["bun", "src/server.ts"]
+          ports:
+            - name: registry
+              containerPort: {{ .Values.registry.port }}
+          env:
+            - name: PORT
+              value: "{{ .Values.registry.port }}"
+          volumeMounts:
+            - name: data
+              mountPath: /app/cache
+              subPath: cache
+            - name: data
+              mountPath: /app/data
+              subPath: data
+          resources:
+            {{- toYaml .Values.resources.registry | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /
+              port: registry
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: registry
+            initialDelaySeconds: 5
+            periodSeconds: 30
+
+        - name: api
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["bun", "src/api.ts"]
+          ports:
+            - name: api
+              containerPort: {{ .Values.api.port }}
+          env:
+            - name: API_PORT
+              value: "{{ .Values.api.port }}"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+              subPath: data
+          resources:
+            {{- toYaml .Values.resources.api | nindent 12 }}
+          readinessProbe:
+            httpGet:
+              path: /stats
+              port: api
+            initialDelaySeconds: 2
+            periodSeconds: 10
+
+        {{- if .Values.sync.enabled }}
+        - name: sync
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["bun", "src/sync.ts"]
+          volumeMounts:
+            - name: data
+              mountPath: /app/cache
+              subPath: cache
+            - name: data
+              mountPath: /app/data
+              subPath: data
+          resources:
+            {{- toYaml .Values.resources.sync | nindent 12 }}
+        {{- end }}
+
+      volumes:
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}

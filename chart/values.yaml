@@ -1,0 +1,41 @@
+image:
+  repository: upm-registry
+  tag: latest
+  pullPolicy: IfNotPresent
+
+registry:
+  port: 4873
+
+api:
+  port: 4000
+
+sync:
+  enabled: true
+
+persistence:
+  enabled: true
+  storageClass: ""
+  size: 10Gi
+
+resources:
+  registry:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  api:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  sync:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 1Gi
