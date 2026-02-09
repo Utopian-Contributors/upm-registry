@@ -1,0 +1,47 @@
+name: Deploy Helm Chart
+
+on:
+  workflow_run:
+    workflows: ["Build & Push Server"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Authenticate with DigitalOcean using doctl
+      - name: Authenticate with DigitalOcean
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      # Set up Kubernetes context
+      - name: Set up Kubernetes context
+        run: |
+          doctl kubernetes cluster kubeconfig save upm-registry-prod
+
+      # Set up Helm
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.12.0
+
+      # Deploy Helm chart
+      - name: Deploy Helm Chart
+        env:
+          NAMESPACE: upm-registry-production
+          RELEASE_NAME: api
+          RELEASE_TAG: ${{ github.sha }}
+        run: |
+          bash chart/scripts/deploy.sh
+      # Trigger frontend redeployment on DigitalOcean App Platform
+      # - name: Trigger Frontend Redeployment
+      #   run: |
+      #     doctl apps create-deployment 6ae09587-e115-4f8a-aa88-7d62b7b344bf

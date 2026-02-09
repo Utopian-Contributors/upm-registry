@@ -1,0 +1,45 @@
+name: Build & Push Server
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src
+      - .github/workflows/push-server-image.yml
+      - .github/workflows/deploy-production.yml
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}/server
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Lowercase image name
+        run: echo "IMAGE=${IMAGE_NAME,,}" >> "$GITHUB_ENV"
+
+      - name: Build image
+        run: |
+          docker build \
+            -f packages/server/Dockerfile \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }} \
+            -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest \
+            .
+
+      - name: Push image
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }}
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest
