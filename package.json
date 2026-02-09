@@ -1,0 +1,12 @@
+{
+  "name": "upm-registry",
+  "type": "module",
+  "scripts": {
+    "start": "bun src/server.ts",
+    "sync": "bun src/sync.ts",
+    "api": "bun src/api.ts"
+  },
+  "devDependencies": {
+    "bun-types": "^1.3.9"
+  }
+}
