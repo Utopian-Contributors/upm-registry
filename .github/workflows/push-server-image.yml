@@ -34,7 +34,6 @@ jobs:
       - name: Build image
         run: |
           docker build \
-            -f packages/server/Dockerfile \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }} \
             -t ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest \
             .
