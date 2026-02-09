@@ -1,0 +1,10 @@
+npm recording proxy listening on http://localhost:4873
+Mode: STRIPPED
+Cache: /Users/ludwigschubert/upm-registry/experiment/cache/stripped
+
+→ 0001 GET /
+  ← 0001 CACHE 2 bytes  /Users/ludwigschubert/upm-registry/experiment/cache/stripped/.json
+→ 0002 GET /chalk
+  ← 0002 CACHE 16363 bytes  /Users/ludwigschubert/upm-registry/experiment/cache/stripped/chalk.json
+
+TOTAL_BYTES_SERVED=16365
