@@ -6,7 +6,7 @@ import { recordSync } from "./stats.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(__dirname, "..", "cache");
-const SEQ_FILE = path.join(__dirname, "..", ".sync-seq");
+const SEQ_FILE = path.join(__dirname, "..", "data", ".sync-seq");
 const CHANGES_BASE = "https://replicate.npmjs.com/registry/_changes";
 const REGISTRY = "https://registry.npmjs.org";
 const POLL_INTERVAL = 10_000; // 10 seconds
