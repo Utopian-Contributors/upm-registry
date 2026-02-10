@@ -23,6 +23,13 @@ nfs:
   server: ""
   path: ""
 
+ingress:
+  enabled: true
+  host: registry.utopian.build
+  tls:
+    enabled: true
+    secretName: upm-tls
+
 resources:
   registry:
     requests:

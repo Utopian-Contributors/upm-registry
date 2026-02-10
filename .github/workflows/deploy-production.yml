@@ -25,7 +25,7 @@ jobs:
       # Set up Kubernetes context
       - name: Set up Kubernetes context
         run: |
-          doctl kubernetes cluster kubeconfig save upm-registry-prod
+          doctl kubernetes cluster kubeconfig save upm-registry
 
       # Set up Helm
       - name: Set up Helm
