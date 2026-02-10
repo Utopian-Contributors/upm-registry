@@ -206,6 +206,12 @@ const server = http.createServer((clientReq, clientRes) => {
   const id = String(++counter).padStart(4, "0");
   console.log(`→ ${id} ${clientReq.method} ${clientReq.url}`);
 
+  if (clientReq.url === "/-/health") {
+    clientRes.writeHead(200, { "content-type": "text/plain" });
+    clientRes.end("ok");
+    return;
+  }
+
   if (clientReq.method !== "GET") {
     proxyPassthrough(id, clientReq, clientRes);
     return;
