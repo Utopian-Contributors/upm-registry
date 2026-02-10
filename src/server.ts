@@ -1,8 +1,10 @@
 import http from "node:http";
 import https from "node:https";
 import fs from "node:fs";
+import fsp from "node:fs/promises";
 import path from "node:path";
 import zlib from "node:zlib";
+import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { stripMetadata, type NpmPackageMetadata } from "./strip.ts";
 import {
@@ -21,18 +23,24 @@ const PORT = Number(process.env.PORT) || 4873;
 fs.mkdirSync(CACHE_DIR, { recursive: true });
 fs.mkdirSync(CACHE_RAW, { recursive: true });
 
+const brotliDecompress = promisify(zlib.brotliDecompress);
+const gunzip = promisify(zlib.gunzip);
+const inflate = promisify(zlib.inflate);
+
 let counter = 0;
 
-// Map URL path to cache file path: "/express" → "cache/express.json"
 function pkgCachePath(dir: string, url: string): string {
   const name = url.replace(/^\//, "");
   return path.join(dir, name + ".json");
 }
 
-function decompress(buf: Buffer, encoding: string | undefined): Buffer {
-  if (encoding === "br") return zlib.brotliDecompressSync(buf);
-  if (encoding === "gzip") return zlib.gunzipSync(buf);
-  if (encoding === "deflate") return zlib.inflateSync(buf);
+async function decompress(
+  buf: Buffer,
+  encoding: string | undefined,
+): Promise<Buffer> {
+  if (encoding === "br") return brotliDecompress(buf);
+  if (encoding === "gzip") return gunzip(buf);
+  if (encoding === "deflate") return inflate(buf);
   return buf;
 }
 
@@ -40,58 +48,37 @@ function pkgFromUrl(url: string): string {
   return url.replace(/^\//, "");
 }
 
-function serveFromCache(
-  id: string,
-  pkg: string,
-  filePath: string,
-  clientRes: http.ServerResponse,
-): void {
-  const body = fs.readFileSync(filePath);
-  console.log(`  ← ${id} CACHE ${body.length} bytes`);
-  recordHit(pkg, body.length);
-  clientRes.writeHead(200, {
-    "content-type": "application/json",
-    "content-length": body.length,
-  });
-  clientRes.end(body);
-}
-
-// Async: decompress, parse, strip, write to cache, delete raw
-function stripAndCache(
+async function stripAndCache(
   rawPath: string,
   cachePath: string,
   encoding: string | undefined,
-): void {
-  setImmediate(() => {
-    try {
-      const compressed = fs.readFileSync(rawPath);
-      const decompressed = decompress(compressed, encoding);
-      const raw = decompressed.toString("utf8");
-      const data = JSON.parse(raw);
-      if (data.versions && data["dist-tags"]) {
-        const stripped = JSON.stringify(
-          stripMetadata(data as NpmPackageMetadata),
-        );
-        fs.mkdirSync(path.dirname(cachePath), { recursive: true });
-        fs.writeFileSync(cachePath, stripped);
-        const rawLen = Buffer.byteLength(raw);
-        const strippedLen = Buffer.byteLength(stripped);
-        const pct = ((1 - strippedLen / rawLen) * 100).toFixed(0);
-        recordStrip(data.name, rawLen, strippedLen);
-        console.log(`  ⚡ stripped ${data.name} (${pct}% smaller)`);
-      } else {
-        // Not a package metadata document, cache as-is
-        fs.mkdirSync(path.dirname(cachePath), { recursive: true });
-        fs.writeFileSync(cachePath, raw);
-      }
-      fs.unlinkSync(rawPath);
-    } catch (err) {
-      console.error(`  ✗ strip error: ${(err as Error).message}`);
+): Promise<void> {
+  try {
+    const compressed = await fsp.readFile(rawPath);
+    const decompressed = await decompress(compressed, encoding);
+    const raw = decompressed.toString("utf8");
+    const data = JSON.parse(raw);
+    if (data.versions && data["dist-tags"]) {
+      const stripped = JSON.stringify(
+        stripMetadata(data as NpmPackageMetadata),
+      );
+      await fsp.mkdir(path.dirname(cachePath), { recursive: true });
+      await fsp.writeFile(cachePath, stripped);
+      const rawLen = Buffer.byteLength(raw);
+      const strippedLen = Buffer.byteLength(stripped);
+      const pct = ((1 - strippedLen / rawLen) * 100).toFixed(0);
+      recordStrip(data.name, rawLen, strippedLen);
+      console.log(`  ⚡ stripped ${data.name} (${pct}% smaller)`);
+    } else {
+      await fsp.mkdir(path.dirname(cachePath), { recursive: true });
+      await fsp.writeFile(cachePath, raw);
     }
-  });
+    await fsp.unlink(rawPath);
+  } catch (err) {
+    console.error(`  ✗ strip error: ${(err as Error).message}`);
+  }
 }
 
-// Proxy a request directly to npm without caching
 function proxyPassthrough(
   id: string,
   clientReq: http.IncomingMessage,
@@ -131,33 +118,34 @@ function proxyPassthrough(
   clientReq.pipe(proxyReq);
 }
 
-const server = http.createServer((clientReq, clientRes) => {
-  const id = String(++counter).padStart(4, "0");
-  console.log(`→ ${id} ${clientReq.method} ${clientReq.url}`);
-
-  // Non-GET: proxy directly with auth (publish, unpublish, etc.)
-  if (clientReq.method !== "GET") {
-    proxyPassthrough(id, clientReq, clientRes);
+async function handleMetadata(
+  id: string,
+  pkg: string,
+  cachePath: string,
+  clientReq: http.IncomingMessage,
+  clientRes: http.ServerResponse,
+): Promise<void> {
+  // Try cache first (single async read, no separate exists check)
+  try {
+    const body = await fsp.readFile(cachePath);
+    console.log(`  ← ${id} CACHE ${body.length} bytes`);
+    recordHit(pkg, body.length);
+    clientRes.writeHead(200, {
+      "content-type": "application/json",
+      "content-length": body.length,
+    });
+    clientRes.end(body);
     return;
+  } catch {
+    // Cache miss, fall through to upstream
   }
 
-  // Tarball / special endpoints (/-/ in path): proxy directly
-  if (clientReq.url!.includes("/-/")) {
-    proxyPassthrough(id, clientReq, clientRes);
-    return;
-  }
-
-  // Metadata GET: check stripped cache first
-  const cachePath = pkgCachePath(CACHE_DIR, clientReq.url!);
-  if (fs.existsSync(cachePath)) {
-    serveFromCache(id, pkgFromUrl(clientReq.url!), cachePath, clientRes);
-    return;
-  }
-
-  // Cache miss: fetch from npm, relay raw, then async strip
+  // Fetch from upstream
   const fwdHeaders = { ...clientReq.headers, host: UPSTREAM };
   delete fwdHeaders["if-none-match"];
   delete fwdHeaders["if-modified-since"];
+
+  const startTime = Date.now();
 
   const proxyReq = https.request(
     {
@@ -180,41 +168,64 @@ const server = http.createServer((clientReq, clientRes) => {
         console.log(
           `  ← ${id} ${proxyRes.statusCode} ${compressed.length} bytes [${encoding || "identity"}] (${elapsed}ms)`,
         );
-        recordMiss(
-          pkgFromUrl(clientReq.url!),
-          compressed.length,
-          compressed.length,
-          elapsed,
-        );
+        recordMiss(pkg, compressed.length, compressed.length, elapsed);
 
-        // Save raw compressed response for async decompression + stripping
-        const rawPath = pkgCachePath(CACHE_RAW, clientReq.url!);
-        fs.mkdirSync(path.dirname(rawPath), { recursive: true });
-        fs.writeFileSync(rawPath, compressed);
-
-        // Kick off async decompress + strip
-        stripAndCache(rawPath, cachePath, encoding);
-
-        // Relay original compressed response to client
+        // Relay original compressed response to client immediately
         const relayHeaders = { ...proxyRes.headers };
         delete relayHeaders["transfer-encoding"];
         relayHeaders["content-length"] = String(compressed.length);
 
         clientRes.writeHead(proxyRes.statusCode!, relayHeaders);
         clientRes.end(compressed);
+
+        // Fire-and-forget: save raw + strip asynchronously
+        const rawPath = pkgCachePath(CACHE_RAW, clientReq.url!);
+        fsp
+          .mkdir(path.dirname(rawPath), { recursive: true })
+          .then(() => fsp.writeFile(rawPath, compressed))
+          .then(() => stripAndCache(rawPath, cachePath, encoding))
+          .catch((err) =>
+            console.error(`  ✗ cache write error: ${err.message}`),
+          );
       });
     },
   );
 
-  const startTime = Date.now();
-
   proxyReq.on("error", (err) => {
     console.error(`  ✗ ${id} proxy error: ${err.message}`);
-    clientRes.writeHead(502);
-    clientRes.end("Bad Gateway");
+    if (!clientRes.headersSent) {
+      clientRes.writeHead(502);
+      clientRes.end("Bad Gateway");
+    }
   });
 
   clientReq.pipe(proxyReq);
+}
+
+const server = http.createServer((clientReq, clientRes) => {
+  const id = String(++counter).padStart(4, "0");
+  console.log(`→ ${id} ${clientReq.method} ${clientReq.url}`);
+
+  if (clientReq.method !== "GET") {
+    proxyPassthrough(id, clientReq, clientRes);
+    return;
+  }
+
+  if (clientReq.url!.includes("/-/")) {
+    proxyPassthrough(id, clientReq, clientRes);
+    return;
+  }
+
+  const cachePath = pkgCachePath(CACHE_DIR, clientReq.url!);
+  const pkg = pkgFromUrl(clientReq.url!);
+
+  handleMetadata(id, pkg, cachePath, clientReq, clientRes).catch((err) => {
+    console.error(`  ✗ ${id} error: ${(err as Error).message}`);
+    if (!clientRes.headersSent) {
+      clientRes.writeHead(500);
+      clientRes.end("Internal Server Error");
+    }
+  });
 });
 
 server.listen(PORT, () => {
