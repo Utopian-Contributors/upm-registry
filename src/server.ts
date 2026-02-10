@@ -45,7 +45,7 @@ async function decompress(
 }
 
 function pkgFromUrl(url: string): string {
-  return url.replace(/^\//, "");
+  return decodeURIComponent(url.replace(/^\//, ""));
 }
 
 async function stripAndCache(
