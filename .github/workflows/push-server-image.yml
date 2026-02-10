@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - src
+      - chart
       - .github/workflows/push-server-image.yml
       - .github/workflows/deploy-production.yml
 
