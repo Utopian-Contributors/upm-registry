@@ -4,7 +4,8 @@
   "scripts": {
     "start": "bun src/server.ts",
     "sync": "bun src/sync.ts",
-    "api": "bun src/api.ts"
+    "api": "bun src/api.ts",
+    "test": "bun test"
   },
   "devDependencies": {
     "bun-types": "^1.3.9"
