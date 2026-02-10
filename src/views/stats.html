@@ -25,11 +25,24 @@
     .stat-label { font-size: 0.7rem; color: #8b949e; }
     .stat-value { font-size: 1.1rem; color: #e6edf3; font-weight: 600; }
     .highlight { color: #3fb950; }
+    .usage { font-size: 0.8rem; color: #8b949e; line-height: 1.6; }
+    .usage code {
+      background: #0d1117; border: 1px solid #30363d; border-radius: 4px;
+      padding: 0.15rem 0.4rem; font-size: 0.75rem; color: #e6edf3; user-select: all;
+    }
     footer { margin-top: 1.5rem; font-size: 0.7rem; color: #484f58; text-align: center; }
   </style>
 </head>
 <body>
   <h1>upm-registry</h1>
+
+  <section>
+    <h2>Usage</h2>
+    <div class="usage">
+      <p><code>npm config set registry {{registryUrl}}</code></p>
+      <p style="margin-top: 0.4rem; font-size: 0.7rem;">or per-install: <code>npm install --registry {{registryUrl}}</code></p>
+    </div>
+  </section>
 
   <section>
     <h2>Cache</h2>

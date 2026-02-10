@@ -35,10 +35,12 @@ function fmtNum(n: number): string {
   return n.toLocaleString("en-US");
 }
 
-export function renderStatsPage(s: Stats): string {
+export function renderStatsPage(s: Stats, host?: string): string {
   const treasuryWallet = process.env.TREASURY_WALLET_ADDRESS ?? "";
+  const registryUrl = host ? `https://${host}` : "https://registry.utopian.build";
 
   const vars: Record<string, string> = {
+    registryUrl,
     "cache.packages": fmtNum(s.cache.packages),
     "cache.totalBytes": fmtBytes(s.cache.totalBytes),
     "requests.total": fmtNum(s.requests.total),

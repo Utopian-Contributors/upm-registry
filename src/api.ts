@@ -16,7 +16,8 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === "GET" && req.url === "/") {
-    const body = renderStatsPage(getStats());
+    const host = req.headers.host?.replace(/:\d+$/, "");
+    const body = renderStatsPage(getStats(), host);
     res.writeHead(200, {
       "content-type": "text/html; charset=utf-8",
       "content-length": Buffer.byteLength(body),
