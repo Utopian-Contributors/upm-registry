@@ -37,7 +37,7 @@ jobs:
       - name: Deploy Helm Chart
         env:
           NAMESPACE: upm-registry-production
-          RELEASE_NAME: api
+          RELEASE_NAME: upm-registry
           RELEASE_TAG: ${{ github.sha }}
           DO_NFS_SERVER: ${{ secrets.DO_NFS_SERVER }}
           DO_NFS_PATH: ${{ secrets.DO_NFS_PATH }}
