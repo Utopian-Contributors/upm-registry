@@ -1,5 +1,5 @@
 image:
-  repository: upm-registry
+  repository: ghcr.io/utopian-contributors/upm-registry
   tag: latest
   pullPolicy: IfNotPresent
 
