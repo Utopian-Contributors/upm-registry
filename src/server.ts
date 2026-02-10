@@ -168,7 +168,7 @@ async function handleMetadata(
         console.log(
           `  ← ${id} ${proxyRes.statusCode} ${compressed.length} bytes [${encoding || "identity"}] (${elapsed}ms)`,
         );
-        recordMiss(pkg, compressed.length, compressed.length, elapsed);
+        recordMiss(pkg, compressed.length, elapsed);
 
         // Relay original compressed response to client immediately
         const relayHeaders = { ...proxyRes.headers };

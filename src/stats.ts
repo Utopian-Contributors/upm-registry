@@ -56,14 +56,13 @@ export function recordHit(pkg: string, sizeBytes: number): void {
 
 export function recordMiss(
   pkg: string,
-  rawBytes: number,
   sizeBytes: number,
   elapsedMs: number,
 ): void {
   insertEvent.run({
     $kind: "miss",
     $package: pkg,
-    $rawBytes: rawBytes,
+    $rawBytes: null,
     $sizeBytes: sizeBytes,
     $elapsedMs: elapsedMs,
   });
@@ -156,7 +155,7 @@ export function getStats(): Stats {
         COALESCE(SUM(size_bytes), 0) as total_served,
         COALESCE(SUM(CASE WHEN raw_bytes IS NOT NULL THEN raw_bytes - size_bytes ELSE 0 END), 0) as total_saved
       FROM events
-      WHERE kind IN ('hit', 'miss')`,
+      WHERE kind = 'hit'`,
     )
     .get() as { total_served: number; total_saved: number };
 
