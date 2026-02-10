@@ -37,21 +37,21 @@ ingress:
 resources:
   registry:
     requests:
-      cpu: 250m
-      memory: 256Mi
+      cpu: 100m
+      memory: 128Mi
     limits:
       cpu: "1"
       memory: 1Gi
   api:
     requests:
-      cpu: 50m
+      cpu: 25m
       memory: 64Mi
     limits:
       cpu: 200m
       memory: 256Mi
   sync:
     requests:
-      cpu: 100m
+      cpu: 50m
       memory: 128Mi
     limits:
       cpu: 500m
