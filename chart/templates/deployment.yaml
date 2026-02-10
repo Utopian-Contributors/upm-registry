@@ -65,6 +65,11 @@ spec:
           env:
             - name: API_PORT
               value: "{{ .Values.api.port }}"
+            - name: TREASURY_WALLET_ADDRESS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.api.env.treasuryWalletSecret.name }}
+                  key: {{ .Values.api.env.treasuryWalletSecret.key }}
           volumeMounts:
             - name: data
               mountPath: /app/data

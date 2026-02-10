@@ -8,6 +8,10 @@ registry:
 
 api:
   port: 4000
+  env:
+    treasuryWalletSecret:
+      name: solana-credentials
+      key: TREASURY_WALLET_ADDRESS
 
 sync:
   enabled: true

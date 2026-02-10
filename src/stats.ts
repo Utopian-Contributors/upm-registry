@@ -109,7 +109,7 @@ export function recordPassthrough(reqPath: string, elapsedMs: number): void {
   });
 }
 
-interface Stats {
+export interface Stats {
   cache: {
     packages: number;
     totalBytes: number;

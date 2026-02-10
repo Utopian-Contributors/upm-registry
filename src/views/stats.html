@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="30">
+  <title>upm-registry stats</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "SF Mono", "Cascadia Code", "Fira Code", monospace;
+      background: #0d1117; color: #c9d1d9;
+      padding: 2rem; max-width: 720px; margin: 0 auto;
+    }
+    h1 { color: #3fb950; font-size: 1.3rem; margin-bottom: 1.5rem; font-weight: 600; }
+    section {
+      background: #161b22; border: 1px solid #30363d; border-radius: 6px;
+      padding: 1rem 1.25rem; margin-bottom: 1rem;
+    }
+    section h2 {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: #8b949e; margin-bottom: 0.75rem; font-weight: 600;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem 1.5rem; }
+    .stat-label { font-size: 0.7rem; color: #8b949e; }
+    .stat-value { font-size: 1.1rem; color: #e6edf3; font-weight: 600; }
+    .highlight { color: #3fb950; }
+    footer { margin-top: 1.5rem; font-size: 0.7rem; color: #484f58; text-align: center; }
+  </style>
+</head>
+<body>
+  <h1>upm-registry</h1>
+
+  <section>
+    <h2>Cache</h2>
+    <div class="grid">
+      <div><div class="stat-label">Packages</div><div class="stat-value">{{cache.packages}}</div></div>
+      <div><div class="stat-label">Total Size</div><div class="stat-value">{{cache.totalBytes}}</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Requests</h2>
+    <div class="grid">
+      <div><div class="stat-label">Total</div><div class="stat-value">{{requests.total}}</div></div>
+      <div><div class="stat-label">Hits</div><div class="stat-value">{{requests.hits}}</div></div>
+      <div><div class="stat-label">Misses</div><div class="stat-value">{{requests.misses}}</div></div>
+      <div><div class="stat-label">Passthroughs</div><div class="stat-value">{{requests.passthroughs}}</div></div>
+      <div><div class="stat-label">Hit Rate</div><div class="stat-value highlight">{{requests.hitRate}}</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Bandwidth</h2>
+    <div class="grid">
+      <div><div class="stat-label">Served</div><div class="stat-value">{{bandwidth.totalServed}}</div></div>
+      <div><div class="stat-label">Saved</div><div class="stat-value highlight">{{bandwidth.totalSaved}}</div></div>
+      <div><div class="stat-label">Savings</div><div class="stat-value highlight">{{bandwidth.savedPct}}</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Sync</h2>
+    <div class="grid">
+      <div><div class="stat-label">Packages Updated</div><div class="stat-value">{{sync.packagesUpdated}}</div></div>
+      <div><div class="stat-label">Last Sync</div><div class="stat-value">{{sync.lastSync}}</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Uptime</h2>
+    <div class="grid">
+      <div><div class="stat-label">API Server</div><div class="stat-value">{{uptime}}</div></div>
+    </div>
+  </section>
+
+  <footer>
+    <p>auto-refreshes every 30s &middot; <a href="/stats" style="color:#484f58">json</a></p>
+    {{#treasuryWallet}}
+    <p style="margin-top: 1.5rem; color: #8b949e;">donate SOL to support this registry</p>
+    <p style="margin-top: 1rem;"><code style="background:#161b22; border:1px solid #30363d; border-radius:4px; padding:0.2rem 0.5rem; font-size:0.65rem; color:#c9d1d9; user-select:all">{{treasuryWallet}}</code></p>
+    {{/treasuryWallet}}
+  </footer>
+</body>
+</html>
