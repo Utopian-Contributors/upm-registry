@@ -136,7 +136,7 @@ export function getStats(): Stats {
   const counts = db
     .query(
       `SELECT
-        COUNT(*) as total,
+        SUM(CASE WHEN kind IN ('hit','miss','passthrough') THEN 1 ELSE 0 END) as total,
         SUM(CASE WHEN kind = 'hit' THEN 1 ELSE 0 END) as hits,
         SUM(CASE WHEN kind = 'miss' THEN 1 ELSE 0 END) as misses,
         SUM(CASE WHEN kind = 'passthrough' THEN 1 ELSE 0 END) as passthroughs
