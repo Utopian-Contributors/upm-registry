@@ -16,6 +16,12 @@ spec:
       labels:
         app: {{ .Release.Name }}
     spec:
+      securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          runAsGroup: 1000
+          fsGroup: 1000
+          fsGroupChangePolicy: "OnRootMismatch"
       containers:
         - name: registry
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -92,7 +98,7 @@ spec:
         - name: data
           {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ .Release.Name }}
+            claimName: {{ .Values.persistence.claimName }}
           {{- else }}
           emptyDir: {}
           {{- end }}

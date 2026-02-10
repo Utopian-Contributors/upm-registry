@@ -5,12 +5,15 @@ set -e
 
 # Check required env vars
 : "${NAMESPACE:?Environment variable NAMESPACE is required}"
-: "${RELEASE_NAME:=?Release name is required}"
-: "${RELEASE_TAG:=?Release tag is required}"
+: "${RELEASE_NAME:?Environment variable RELEASE_NAME is required}"
+: "${RELEASE_TAG:?Environment variable RELEASE_TAG is required}"
+: "${NFS_SERVER:?Environment variable NFS_SERVER is required}"
+: "${NFS_PATH:?Environment variable NFS_PATH is required}"
 
-# Or manually
 helm upgrade $RELEASE_NAME chart \
   --install \
   --namespace $NAMESPACE \
-  --set api.image.tag=${RELEASE_TAG} \
-  --values chart/values.yaml \
+  --set image.tag=${RELEASE_TAG} \
+  --set nfs.server=${DO_NFS_SERVER} \
+  --set nfs.path=${DO_NFS_PATH} \
+  --values chart/values.yaml

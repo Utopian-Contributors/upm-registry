@@ -13,9 +13,15 @@ sync:
   enabled: true
 
 persistence:
+  claimName: "upm-nfs-pvc"
+  volumeName: "upm-nfs-pv"
   enabled: true
   storageClass: ""
   size: 10Gi
+
+nfs:
+  server: ""
+  path: ""
 
 resources:
   registry:
