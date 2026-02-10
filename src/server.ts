@@ -156,27 +156,29 @@ async function handleMetadata(
       headers: fwdHeaders,
     },
     (proxyRes) => {
-      const chunks: Buffer[] = [];
+      const encoding = proxyRes.headers["content-encoding"];
 
-      proxyRes.on("data", (chunk: Buffer) => chunks.push(chunk));
+      // Stream response to client immediately
+      const relayHeaders = { ...proxyRes.headers };
+      clientRes.writeHead(proxyRes.statusCode!, relayHeaders);
+
+      // Collect chunks for async cache while streaming to client
+      const chunks: Buffer[] = [];
+      proxyRes.on("data", (chunk: Buffer) => {
+        chunks.push(chunk);
+        clientRes.write(chunk);
+      });
 
       proxyRes.on("end", () => {
+        clientRes.end();
+
         const compressed = Buffer.concat(chunks);
         const elapsed = Date.now() - startTime;
-        const encoding = proxyRes.headers["content-encoding"];
 
         console.log(
           `  ← ${id} ${proxyRes.statusCode} ${compressed.length} bytes [${encoding || "identity"}] (${elapsed}ms)`,
         );
         recordMiss(pkg, compressed.length, elapsed);
-
-        // Relay original compressed response to client immediately
-        const relayHeaders = { ...proxyRes.headers };
-        delete relayHeaders["transfer-encoding"];
-        relayHeaders["content-length"] = String(compressed.length);
-
-        clientRes.writeHead(proxyRes.statusCode!, relayHeaders);
-        clientRes.end(compressed);
 
         // Fire-and-forget: save raw + strip asynchronously
         const rawPath = pkgCachePath(CACHE_RAW, clientReq.url!);
