@@ -1,18 +1,5 @@
 {{- if .Values.persistence.enabled }}
 apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ .Values.persistence.claimName }}
-spec:
-  storageClassName: ""           
-  accessModes:
-    - ReadWriteMany
-  resources:
-    requests:
-      storage: 10Gi              
-  volumeName: {{ .Values.persistence.volumenName }}
----
-apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: {{ .Values.persistence.volumeName }}
@@ -23,8 +10,8 @@ spec:
     storage: 100Gi
   accessModes:
     - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain 
-  storageClassName: "" 
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
   mountOptions:
     - vers=4.1 # Remove this option to always use the latest version
     - hard # Retry I/O until server recovers
@@ -33,4 +20,17 @@ spec:
   nfs:
     server: {{ .Values.nfs.server }}
     path: {{ .Values.nfs.path }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.persistence.claimName }}
+spec:
+  storageClassName: ""
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  volumeName: {{ .Values.persistence.volumeName }}
 {{- end }}
