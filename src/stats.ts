@@ -98,6 +98,21 @@ export function recordSync(
   });
 }
 
+export function recordPrefetch(
+  pkg: string,
+  rawBytes: number,
+  sizeBytes: number,
+): void {
+  rawSizeMap.set(pkg, rawBytes);
+  insertEvent.run({
+    $kind: "prefetch",
+    $package: pkg,
+    $rawBytes: rawBytes,
+    $sizeBytes: sizeBytes,
+    $elapsedMs: null,
+  });
+}
+
 export function recordPassthrough(reqPath: string, elapsedMs: number): void {
   insertEvent.run({
     $kind: "passthrough",
@@ -128,6 +143,9 @@ export interface Stats {
   sync: {
     packagesUpdated: number;
     lastSync: string | null;
+  };
+  prefetch: {
+    packagesPrefetched: number;
   };
   uptime: number;
 }
@@ -180,6 +198,12 @@ export function getStats(): Stats {
     )
     .get() as { packages: number; total_bytes: number };
 
+  const prefetchStats = db
+    .query(
+      "SELECT COUNT(*) as count FROM events WHERE kind = 'prefetch'",
+    )
+    .get() as { count: number };
+
   const hitsPlusMisses = counts.hits + counts.misses;
 
   return {
@@ -206,6 +230,9 @@ export function getStats(): Stats {
     sync: {
       packagesUpdated: syncStats.packages_updated,
       lastSync: syncStats.last_sync,
+    },
+    prefetch: {
+      packagesPrefetched: prefetchStats.count,
     },
     uptime: Math.floor((Date.now() - startedAt) / 1000),
   };

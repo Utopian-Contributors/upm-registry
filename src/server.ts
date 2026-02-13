@@ -13,6 +13,7 @@ import {
   recordStrip,
   recordPassthrough,
 } from "./stats.ts";
+import { prefetchDeps } from "./prefetch.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CACHE_DIR = path.join(__dirname, "..", "cache");
@@ -69,6 +70,7 @@ async function stripAndCache(
       const pct = ((1 - strippedLen / rawLen) * 100).toFixed(0);
       recordStrip(data.name, rawLen, strippedLen);
       console.log(`  ⚡ stripped ${data.name} (${pct}% smaller)`);
+      prefetchDeps(data as NpmPackageMetadata);
     } else {
       await fsp.mkdir(path.dirname(cachePath), { recursive: true });
       await fsp.writeFile(cachePath, raw);

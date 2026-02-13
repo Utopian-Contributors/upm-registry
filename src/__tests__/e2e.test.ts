@@ -60,14 +60,14 @@ describe("upm-registry e2e", () => {
     } catch {}
 
     // Start the registry proxy server
-    serverProc = Bun.spawn(["bun", path.join(SRC_DIR, "server.ts")], {
+    serverProc = Bun.spawn([process.execPath, path.join(SRC_DIR, "server.ts")], {
       env: { ...process.env, PORT: String(REGISTRY_PORT) },
       stdout: "pipe",
       stderr: "inherit",
     });
 
     // Start the API server
-    apiProc = Bun.spawn(["bun", path.join(SRC_DIR, "api.ts")], {
+    apiProc = Bun.spawn([process.execPath, path.join(SRC_DIR, "api.ts")], {
       env: { ...process.env, API_PORT: String(API_PORT) },
       stdout: "pipe",
       stderr: "inherit",
